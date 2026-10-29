@@ -2371,8 +2371,13 @@ var qrcode = function() {
   if (!KEY) $('#nokey').style.display = 'block';
   function post(b) { b.k = KEY; return fetch('/api/host', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json(); }); }
   function advance() { if (!KEY || !V || busy) return; busy = true; post({ action: 'advance', from: V.phase }).then(function () { busy = false; }, function () { busy = false; }); }
-  function qrSvg(url) { try { var q = qrcode(0, 'M'); q.addData(url); q.make(); return q.createSvgTag({ cellSize: 8, margin: 0, scalable: true }); } catch (e) { return '<div style="color:#000;font-size:22px">QR не получился</div>'; } }
-  function joinUrl() { return info.urls[urlIdx % Math.max(1, info.urls.length)] || ''; }
+  function qrSvg(url) { try { var q = qrcode(0, 'M'); q.addData(url); q.make(); return q.createSvgTag({ cellSize: 8, margin: 32, scalable: true }); } catch (e) { return '<div style="color:#000;font-size:22px">QR не получился</div>'; } }
+  function joinUrl() {
+    /* на https (Railway) берём адрес прямо из открытой страницы, ему не нужен /api/info; локально по http остаётся выбор адреса сети */
+    if (location.protocol === 'https:') return location.origin + '/play';
+    var base = info.urls[urlIdx % Math.max(1, info.urls.length)] || '';
+    return base ? base.replace(/\/+$/, '') + '/play' : '';
+  }
   function connect() { var es = new EventSource('/events'); es.onmessage = function (e) { V = JSON.parse(e.data); render(); }; }
   fetch('/api/info').then(function (r) { return r.json(); }).then(function (i) { info = i; lastSig = ''; render(); });
 
