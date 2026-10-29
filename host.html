@@ -53,6 +53,34 @@ td.b{text-align:right;font:700 38px Unbounded,sans-serif;color:var(--gold);width
 tr.first td.b{color:#fff;text-shadow:0 0 24px rgba(255,197,61,.8)}
 .ctl{right:30px;top:12px;font-size:14px;letter-spacing:.14em;color:#5F7399}
 #nokey{left:0;top:1010px;width:1920px;text-align:center;font-size:22px;color:#FF6A6A;display:none}
+
+/* Motion scenes trigger on presenter steps, but never advance the game by themselves. */
+#sceneFx{position:absolute;inset:0;z-index:50;pointer-events:none;opacity:0;overflow:hidden;display:none;background:rgba(2,6,13,.12)}
+#sceneFx.show{display:block;animation:scene-complete 1.24s both}
+#sceneFx .fx-door{position:absolute;top:0;width:50%;height:100%;background:linear-gradient(100deg,#07111f,#16314f 95%);border-right:2px solid rgba(51,220,255,.6);box-shadow:0 0 90px rgba(45,176,241,.35);animation:scene-slide-left 1.2s cubic-bezier(.25,.7,.25,1) both}
+#sceneFx .fx-door.right{left:50%;border-right:0;border-left:2px solid rgba(51,220,255,.6);transform-origin:right;animation-name:scene-slide-right;background:linear-gradient(260deg,#07111f,#16314f 95%)}
+#sceneFx .fx-door.left{left:0}
+#sceneFx .fx-lines{position:absolute;inset:-35%;background:repeating-linear-gradient(90deg,transparent 0,transparent 55px,rgba(54,215,255,.08) 56px,transparent 58px),repeating-linear-gradient(0deg,transparent 0,transparent 55px,rgba(54,215,255,.12) 56px,transparent 58px);transform:perspective(500px) rotateX(65deg) scale(1.5);animation:scene-zoom 1.2s both}
+#sceneFx .fx-text{position:absolute;left:0;right:0;top:43%;text-align:center;font:700 clamp(38px,5.4vw,104px) Unbounded,sans-serif;color:white;letter-spacing:.08em;text-shadow:0 0 60px rgba(59,208,255,.8);animation:scene-text 1.2s both}
+#sceneFx .fx-sub{font:500 26px 'JetBrains Mono',monospace;letter-spacing:.24em;color:#77dfff;margin-top:22px}
+@keyframes scene-complete{0%{opacity:0}12%,70%{opacity:1}100%{opacity:0}}
+@keyframes scene-slide-left{0%,25%{transform:translateX(0)}100%{transform:translateX(-110%)}}
+@keyframes scene-slide-right{0%,25%{transform:translateX(0)}100%{transform:translateX(110%)}}
+@keyframes scene-zoom{from{opacity:0;transform:perspective(500px) rotateX(65deg) scale(.5)}55%{opacity:1}to{opacity:0;transform:perspective(500px) rotateX(65deg) scale(2)}}
+@keyframes scene-text{0%,15%{opacity:0;transform:scale(1.4);filter:blur(10px)}35%,72%{opacity:1;transform:scale(1);filter:blur(0)}100%{opacity:0;transform:scale(.92)}}
+#theoryScene{display:none;position:absolute;inset:0;background:radial-gradient(ellipse at 50% 45%,#10213a,#03050b 72%);z-index:38;padding:clamp(24px,4vw,80px);color:#fff;box-sizing:border-box}
+#theoryScene.on{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:22px}
+#theoryScene .th-heading{font:700 clamp(25px,3.5vw,60px) Unbounded,sans-serif;text-align:center;letter-spacing:.025em}
+#theoryScene .th-mini{font:500 clamp(12px,1.5vw,25px) 'JetBrains Mono',monospace;color:#9abbd8;letter-spacing:.18em;text-align:center}
+#theoryScene .th-board{display:flex;width:100%;gap:clamp(8px,1.2vw,24px);justify-content:center;align-items:stretch;margin-top:16px}
+#theoryScene .th-step{flex:1;min-width:0;min-height:clamp(160px,24vh,390px);padding:clamp(12px,1.7vw,34px);background:rgba(8,19,37,.9);border:2px solid rgba(58,190,255,.4);box-shadow:0 0 28px rgba(35,140,220,.15);border-radius:18px;opacity:0;animation:th-rise .7s ease-out forwards;animation-delay:var(--th-delay)}
+#theoryScene .th-step .tag{position:static;letter-spacing:.14em;color:#73dfff;font:500 clamp(13px,1.4vw,27px) 'JetBrains Mono',monospace}
+#theoryScene .th-step .formula{font:700 clamp(18px,2.5vw,49px) Unbounded,sans-serif;margin:clamp(12px,2.1vw,40px) 0;white-space:normal}
+#theoryScene .th-step .sub{position:static;display:block;width:auto;height:auto;left:auto;top:auto;text-align:left;white-space:normal;letter-spacing:normal;line-height:1.55;opacity:1;color:#c5d6e5;font:500 clamp(11px,1.4vw,26px) 'JetBrains Mono',monospace}
+#theoryScene .th-win{color:#ffd05d}
+#theoryScene .th-note{margin-top:18px;color:#9ec9de;font:500 clamp(11px,1.15vw,22px) 'JetBrains Mono',monospace;text-align:center}
+@keyframes th-rise{0%{opacity:0;transform:translateY(42px) scale(.96);filter:blur(6px)}100%{opacity:1;transform:translateY(0) scale(1);filter:blur(0)}}
+@media(prefers-reduced-motion:reduce){#sceneFx.show,#sceneFx *{animation:none!important}#sceneFx{display:none!important}#theoryScene .th-step{animation:none;opacity:1}}
 </style></head><body>
 <div id="stage"><div id="ui">
   <div class="grid"></div>
@@ -62,7 +90,19 @@ tr.first td.b{color:#fff;text-shadow:0 0 24px rgba(255,197,61,.8)}
   <div id="body"></div>
   <div class="ctl mono" id="ctl">Р — ИГРА ЗАНОВО · U — ДРУГОЙ АДРЕС QR · F — ЭКРАН</div>
   <div id="nokey" class="mono">нет ключа ведущего в адресе: экран только показывает, пробел не работает</div>
-</div></div>
+</div>
+<div id="sceneFx"><div class="fx-lines"></div><div class="fx-door left"></div><div class="fx-door right"></div><div class="fx-text" id="fxText"></div></div>
+<div id="theoryScene">
+  <div class="th-mini">ДИНАМИЧЕСКОЕ ПРОГРАММИРОВАНИЕ · ОБРАТНАЯ ИНДУКЦИЯ</div>
+  <div class="th-heading">ВЫБИРАЕМ С КОНЦА</div>
+  <div class="th-board">
+    <div class="th-step" style="--th-delay:.15s"><div class="tag">ЭТАЖ 3</div><div class="formula">300 <span class="th-win">&gt;</span> 240</div><div class="sub">Забрать 300 выгоднее,<br>чем 20% × 1200 = 240</div></div>
+    <div class="th-step" style="--th-delay:.55s"><div class="tag">ЭТАЖ 2</div><div class="formula"><span class="th-win">213</span> &gt; 180 &gt; 150</div><div class="sub">Лифт: 70%×240 + 30%×150<br>с учётом личного возврата</div></div>
+    <div class="th-step" style="--th-delay:.95s"><div class="tag">ЭТАЖ 1</div><div class="formula"><span class="th-win">170,4</span> &gt; 100</div><div class="sub">80% × 213 = 170,4<br>Оптимальный первый шаг</div></div>
+  </div>
+  <div class="th-note">ПРОБЕЛ — ВЕРНУТЬ РЕЙТИНГ · ИТОГ ОДНОГО ИГРОКА НЕ РАВЕН EV</div>
+</div>
+</div>
 <script>//---------------------------------------------------------------------
 //
 // QR Code Generator for JavaScript
@@ -2364,13 +2404,37 @@ var qrcode = function() {
 <script>
 (function () {
   var $ = function (s) { return document.querySelector(s); }, B = $('#body'), V = null, info = { urls: [] }, urlIdx = 0, KEY = new URLSearchParams(location.search).get('k') || '', lastSig = '', timers = [], busy = false;
-  var ph0 = null;
+  var ph0 = null, showTheory = false, shownScene = null, sceneTimer = null;
+  function cinematicPhase(phase, round, fromPhase) {
+    if (!fromPhase || fromPhase === phase && phase !== 'open') return;
+    var title = phase === 'open' ? 'ЭТАЖ ' + round :
+      phase === 'closed' ? 'ВЫБОР СДЕЛАН' :
+      phase === 'revealed' ? 'РЕЗУЛЬТАТ' :
+      phase === 'detour_wait' ? 'ДВА ПУТИ' :
+      phase === 'final' ? 'ФИНАЛ' : '';
+    if (!title) return;
+    var fx = $('#sceneFx');
+    $('#fxText').innerHTML = title + '<div class="fx-sub">DECISION / 01 · ' + (phase === 'detour_wait' ? 'ЛИЧНЫЕ МАРШРУТЫ' : 'ПОДЗЕМЕЛЬЕ') + '</div>';
+    fx.classList.remove('show');
+    void fx.offsetWidth;
+    fx.classList.add('show');
+    clearTimeout(sceneTimer);
+    sceneTimer = setTimeout(function(){ fx.classList.remove('show'); }, 1400);
+  }
+  function theory(show) {
+    showTheory = !!show;
+    var el = $('#theoryScene');
+    el.classList.toggle('on', showTheory);
+    if (showTheory) { el.style.display = 'flex'; var steps = el.querySelectorAll('.th-step'); steps.forEach(function (s) { s.style.animation = 'none'; void s.offsetWidth; s.style.animation = ''; }); }
+    else el.style.display = 'none';
+  }
+
   function esc(s) { return String(s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; }); }
   function layout() { var sw = Math.min(innerWidth, innerHeight * 16 / 9), st = $('#stage'); st.style.width = sw + 'px'; st.style.height = sw * 9 / 16 + 'px'; $('#ui').style.transform = 'scale(' + (sw / 1920) + ')'; }
   addEventListener('resize', layout); layout();
   if (!KEY) $('#nokey').style.display = 'block';
   function post(b) { b.k = KEY; return fetch('/api/host', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(b) }).then(function (r) { return r.json(); }); }
-  function advance() { if (!KEY || !V || busy) return; busy = true; post({ action: 'advance', from: V.phase }).then(function () { busy = false; }, function () { busy = false; }); }
+  function advance() { if (!KEY || !V || busy) return; if (V.phase === 'final') { theory(!showTheory); return; } busy = true; post({ action: 'advance', from: V.phase }).then(function () { busy = false; }, function () { busy = false; }); }
   function qrSvg(url) { try { var q = qrcode(0, 'M'); q.addData(url); q.make(); return q.createSvgTag({ cellSize: 8, margin: 32, scalable: true }); } catch (e) { return '<div style="color:#000;font-size:22px">QR не получился</div>'; } }
   function joinUrl() {
     /* на https (Railway) берём адрес прямо из открытой страницы, ему не нужен /api/info; локально по http остаётся выбор адреса сети */
@@ -2389,9 +2453,10 @@ var qrcode = function() {
     if (!V) return;
     var v = V; v0 = V; var ps = v.players.filter(function (p) { return !p.sp; }), f = v.floor, ph = v.phase;
     $('#t2').textContent = ps.length + ' В ИГРЕ'; $('#t4').textContent = ph === 'lobby' ? 'ЛОББИ' : ph === 'final' ? 'ИТОГИ' : 'ЭТАЖ ' + v.round + ' / 3';
-    var sig = JSON.stringify([ph, v.round, ps.map(function (p) { return [p.id, p.a, p.v, p.c, p.b]; }), joinUrl()]);
+    var sig = JSON.stringify([ph, v.round, v.counts.detours, ps.map(function (p) { return [p.id, p.a, p.v, p.c, p.b, p.det]; }), joinUrl()]);
     if (sig === lastSig) return; lastSig = sig;
     var prev = ph0; ph0 = ph + v.round;
+    if (prev && prev !== ph0) { cinematicPhase(ph, v.round, prev); if (ph !== 'final') theory(false); }
     timers.forEach(clearTimeout); timers = [];
     var h = '';
     if (ph === 'lobby') {
@@ -2402,7 +2467,7 @@ var qrcode = function() {
       h += '<div style="left:780px;top:350px;width:1000px"><div class="k mono">УЖЕ В ИГРЕ: <b style="color:var(--gold)">' + ps.length + '</b></div><div class="chips" style="margin-top:22px;max-height:520px;overflow:hidden">' + (ps.length ? chips(ps.slice(-60), prev === 'lobby0' ? '' : 'new') : '<span class="mono" style="font-size:26px;color:#5F7399">пока никого…</span>') + '</div></div>';
       h += hint('<b>ПРОБЕЛ</b> — НАЧАТЬ ИГРУ');
     } else if (ph === 'open') {
-      var act = ps.filter(function (p) { return p.a; }), voted = act.filter(function (p) { return p.v; }).length, pc = act.length ? voted / act.length * 100 : 0;
+      var act = ps.filter(function (p) { return p.a && !p.det; }), voted = act.filter(function (p) { return p.v; }).length, pc = act.length ? voted / act.length * 100 : 0;
       h += '<div class="k mono" style="left:0;top:140px;width:1920px;text-align:center">ЭТАЖ ' + v.round + ' ИЗ 3 · ГОЛОСОВАНИЕ ОТКРЫТО</div>';
       h += '<div class="h1" style="top:184px;font-size:120px">В РУКАХ ' + f.hand + '</div>';
       var hands = {}; act.forEach(function (p) { hands[p.g] = (hands[p.g] || 0) + 1; });
@@ -2422,7 +2487,7 @@ var qrcode = function() {
       h += '<div class="bar" style="left:380px;top:850px;width:1160px"><i style="width:' + pc + '%"></i></div>';
       h += hint('<b>ПРОБЕЛ</b> — ЗАКРЫТЬ ГОЛОСОВАНИЕ');
     } else if (ph === 'closed') {
-      var tk = ps.filter(function (p) { return p.a && p.c === 'take'; }), go = ps.filter(function (p) { return p.a && p.c === 'go'; }), lf = ps.filter(function (p) { return p.a && p.c === 'lift'; });
+      var tk = ps.filter(function (p) { return p.a && !p.det && p.c === 'take'; }), go = ps.filter(function (p) { return p.a && !p.det && p.c === 'go'; }), lf = ps.filter(function (p) { return p.a && !p.det && p.c === 'lift'; });
       h += '<div class="k mono" style="left:0;top:130px;width:1920px;text-align:center">ГОЛОСОВАНИЕ ЗАКРЫТО · ЭТАЖ ' + v.round + '</div>';
       h += '<div class="h1" style="top:172px;font-size:88px">КТО ЧТО ВЫБРАЛ</div>';
       if (f.lift) {
@@ -2447,18 +2512,24 @@ var qrcode = function() {
         h += col(120, 'ЗАБРАЛИ', took.length, took, 'var(--cy)', '', true);
         h += col(1000, 'ИДУТ ДАЛЬШЕ', gos.length, gos, 'var(--gold)', 'gold', true);
       }
-      var more = v.round < 3 && ps.some(function (p) { return p.a; });
-      h += hint('<b>ПРОБЕЛ</b> — ' + (more ? 'ЭТАЖ ' + (v.round + 1) : 'ПОКАЗАТЬ ИТОГИ'));
+      var more = v.round < 3 && ps.some(function (p) { return p.a && !p.det; });
+      h += hint('<b>ПРОБЕЛ</b> — ' + (more ? 'ЭТАЖ ' + (v.round + 1) : v.counts.detours ? 'ПОКАЗАТЬ ЛИЧНЫЕ МАРШРУТЫ' : 'ПОКАЗАТЬ ИТОГИ'));
       var els = B.querySelectorAll('.chip.pend');   /* кубики появляются по очереди */
       void els;
+    } else if (ph === 'detour_wait') {
+      h += '<div class="k mono" style="top:158px;width:1920px;text-align:center">СПЕЦИАЛЬНЫЙ МАРШРУТ · НЕ ВЛИЯЕТ НА ДРУГИХ</div>';
+      h += '<div class="h1" style="top:240px;font-size:85px">ЛИФТ ВЕРНУЛ ИГРОКОВ</div>';
+      h += '<div class="sub" style="top:350px;font-size:37px">Часть игроков проходит этажи повторно на своих телефонах</div>';
+      h += '<div class="card gold" style="left:590px;top:490px;width:740px;padding:60px;text-align:center"><div class="k mono">ЕЩЁ ПРОХОДЯТ ЛИЧНУЮ ВЕТКУ</div><div class="disp" style="font-size:150px;color:var(--gold);margin:24px 0">' + v.counts.detours + '</div><div class="k mono">Игроки с завершённой веткой уже в рейтинге</div></div>';
+      h += hint(v.counts.detours ? 'ОЖИДАНИЕ · E — ЗАВЕРШИТЬ ОСТАВШИЕСЯ МАРШРУТЫ' : '<b>ПРОБЕЛ</b> — ПОКАЗАТЬ ИТОГИ');
     } else if (ph === 'final') {
       var fi = v.final;
       h += '<div class="k mono" style="left:0;top:120px;width:1920px;text-align:center">ИГРА ЗАКОНЧЕНА · КТО БОЛЬШЕ ВСЕХ ЗАРАБОТАЛ</div>';
       h += '<div class="h1" style="top:150px;font-size:76px">ТОП-10</div>';
       h += '<div class="card gold" style="left:140px;top:262px;width:1060px;padding:4px 14px"><table>' + fi.top.map(function (p, i) { return '<tr class="' + (i === 0 ? 'first' : '') + '"><td class="r">' + p.r + '</td><td class="n">' + esc(p.n) + '</td><td class="b">' + p.b + '</td></tr>'; }).join('') + '</table></div>';
       h += '<div class="card" style="left:1280px;top:262px;width:500px;padding:30px 34px"><div class="k mono" style="font-size:20px">ИГРОКОВ</div><div class="disp" style="font-size:60px;font-weight:700">' + fi.n + '</div><div class="k mono" style="font-size:20px;margin-top:22px">СРЕДНИЙ БАЛАНС ЗАЛА</div><div class="disp" style="font-size:60px;font-weight:700;color:var(--gold)">' + String(fi.avg).replace('.', ',') + '</div><div class="k mono" style="font-size:20px;margin-top:22px">ОСТАЛИСЬ С НУЛЁМ</div><div class="disp" style="font-size:60px;font-weight:700;color:#FF6A6A">' + fi.zero + '</div></div>';
-      h += '<div class="card" style="left:1280px;top:700px;width:500px;padding:20px 34px;border-color:rgba(255,197,61,.6)"><div style="font-size:24px;line-height:1.3"><b style="color:var(--gold)">Расчёт:</b> лучшая стратегия (идти до 3-го этажа) даёт в среднем ' + fi.theory + '. Один забег — это случай.' + (fi.lift && fi.lift.n ? '<br><b style="color:var(--grn)">Лифт:</b> выбрали ' + fi.lift.n + ', вверх ' + fi.lift.up + ', их средний баланс ' + String(fi.lift.avg).replace('.', ',') + '. Расчёт: лифт ' + fi.lift.ev + ', лестница ' + fi.lift.stairs + ', «забрать» 150.' : '') + '</div></div>';
-      h += hint('<b>Р</b> — НОВАЯ ИГРА');
+      h += '<div class="card" style="left:1280px;top:700px;width:500px;padding:20px 34px;border-color:rgba(255,197,61,.6)"><div style="font-size:24px;line-height:1.3"><b style="color:var(--gold)">Расчёт:</b> лучшая стратегия с учётом возврата из лифта даёт в среднем ' + fi.theory + '. Один забег — это случай.' + (fi.lift && fi.lift.n ? '<br><b style="color:var(--grn)">Лифт:</b> выбрали ' + fi.lift.n + ', вверх ' + fi.lift.up + ', их средний баланс ' + String(fi.lift.avg).replace('.', ',') + '. Расчёт: лифт ' + fi.lift.ev + ', лестница ' + fi.lift.stairs + ', «забрать» 150.' : '') + '</div></div>';
+      h += hint('<b>ПРОБЕЛ</b> — ДЕРЕВО РЕШЕНИЙ · Р — НОВАЯ ИГРА');
     }
     B.innerHTML = h;
     $('#ctl').style.display = ph === 'lobby' ? 'block' : 'none';
@@ -2486,6 +2557,7 @@ var qrcode = function() {
   addEventListener('keydown', function (e) {
     var k = e.key;
     if (k === ' ' || k === 'ArrowRight' || k === 'Enter') { advance(); e.preventDefault(); }
+    else if (k === 'e' || k === 'E' || k === 'у' || k === 'У') { if (KEY && V && V.phase === 'detour_wait' && confirm('Завершить все оставшиеся личные маршруты, сохранив игрокам золото в руках?')) post({ action: 'finish_detours' }); }
     else if (k === 'r' || k === 'R' || k === 'к' || k === 'К') { if (KEY && confirm('Начать игру заново? Имена останутся, баланс обнулится.')) post({ action: 'reset' }); }
     else if (k === 'u' || k === 'U' || k === 'г' || k === 'Г') { urlIdx++; lastSig = ''; render(); }
     else if (k === 'f' || k === 'F' || k === 'а' || k === 'А') { if (document.fullscreenElement) document.exitFullscreen(); else document.documentElement.requestFullscreen(); }

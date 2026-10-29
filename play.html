@@ -57,6 +57,28 @@ input:focus{border-color:var(--cy);box-shadow:0 0 28px rgba(54,215,255,.3)}
 .pulse{animation:p 1.6s ease-in-out infinite}@keyframes p{50%{opacity:.55}}
 .pop{animation:pop .4s cubic-bezier(.2,1.4,.4,1)}@keyframes pop{from{transform:scale(.8);opacity:0}}
 #off{position:fixed;left:0;right:0;top:0;padding:8px;text-align:center;font-size:13px;background:#5a1620;color:#fff;display:none;z-index:9}
+
+/* Solo lift detour: individual cinematic floor sequence */
+.solo-portal{position:relative;overflow:hidden;border:1px solid rgba(50,215,255,.34);border-radius:20px;background:radial-gradient(ellipse at 50% -15%,rgba(49,139,191,.26),transparent 70%),linear-gradient(150deg,#08111f,#03050b 80%);padding:23px 18px 25px;min-height:360px;box-shadow:0 0 46px rgba(0,166,220,.13),inset 0 0 36px rgba(25,71,100,.12)}
+.solo-portal .solo-k{font-size:12px;letter-spacing:.22em;color:#86a3c1;text-align:center;margin:0 0 14px}
+.solo-portal .solo-number{font-family:Unbounded,sans-serif;font-size:clamp(58px,21vw,98px);text-align:center;font-weight:700;color:#fff;line-height:1.12;text-shadow:0 0 30px rgba(54,215,255,.5)}
+.solo-portal .solo-question{font-size:15px;color:#bac8df;text-align:center;line-height:1.5;margin:13px 0 20px}
+.solo-portal .solo-btn{display:block;width:100%;font:700 14px Unbounded,sans-serif;padding:16px 12px;margin-top:11px;border:1px solid #50859c;background:linear-gradient(90deg,#173349,#102332);border-radius:13px;color:white;cursor:pointer;letter-spacing:.025em}
+.solo-portal .solo-btn.primary{border-color:#f4c65f;background:linear-gradient(110deg,#513b18,#80601b);color:#fff}
+.solo-portal .solo-btn:disabled{opacity:.38;pointer-events:none}
+.solo-portal .solo-badge{display:block;margin:13px auto;border:1px solid rgba(54,215,255,.5);width:max-content;padding:6px 16px;border-radius:99px;color:#6ae0ff;font-size:12px;letter-spacing:.2em}
+.solo-shaft{height:125px;margin:16px auto;max-width:225px;position:relative;border-left:3px solid rgba(54,215,255,.35);border-right:3px solid rgba(54,215,255,.35);background:repeating-linear-gradient(to bottom,transparent 0,transparent 23px,rgba(54,215,255,.09) 24px);overflow:hidden;perspective:500px}
+.solo-shaft:before{content:'';position:absolute;inset:-30% 12%;background:linear-gradient(transparent,rgba(66,202,255,.28),transparent);animation:solo-fall 1.8s ease-out both}
+.solo-elevator{position:absolute;top:0;left:30%;width:40%;height:45px;border:2px solid #f7c24d;border-radius:6px;box-shadow:0 0 18px #cc9c4e;background:linear-gradient(45deg,rgba(177,126,33,.17),rgba(255,225,103,.07));animation:solo-elevator-drop 2.4s cubic-bezier(.2,.8,.25,1) both}
+.solo-portal.descend{animation:solo-shock .48s linear 1.5s both}
+.solo-portal .solo-reveal{animation:solo-reveal .7s cubic-bezier(.1,.8,.25,1) both}
+.solo-portal .solo-alert{color:#fc7f7f;text-align:center;letter-spacing:.14em;font-size:11px}
+.solo-portal .solo-choice{animation:solo-reveal .6s ease-out both}
+@keyframes solo-elevator-drop{0%{transform:translateY(-5px)}12%{transform:translateY(-5px)}70%{transform:translateY(82px)}100%{transform:translateY(82px)}}
+@keyframes solo-fall{from{transform:translateY(-80px)}to{transform:translateY(130px)}}
+@keyframes solo-shock{0%,100%{filter:none}35%{filter:brightness(1.35)}65%{filter:brightness(.7)}}
+@keyframes solo-reveal{from{opacity:0;transform:translateY(24px) scale(.97)}to{opacity:1;transform:translateY(0) scale(1)}}
+@media(prefers-reduced-motion:reduce){.solo-portal *,.solo-portal{animation:none!important}}
 </style></head><body>
 <div id="off">нет связи с сервером, переподключаюсь…</div>
 <div id="top" class="mono"><span><b>DECISION / 01</b></span><span id="who"></span></div>
@@ -86,10 +108,57 @@ input:focus{border-color:var(--cy);box-shadow:0 0 28px rgba(54,215,255,.3)}
     var again = function () { if (n >= 5) { toast('Не удалось отправить выбор. Нажмите ещё раз'); return; } toast('Связь занята, повторяю…'); setTimeout(function () { vote(c, n + 1); }, 400 * (n + 1) + Math.random() * 400); };
     post('/api/vote', { pid: pid, choice: c }).then(function (r) { if (r.err === 'slow') return again(); if (r.err) return; toast(''); if (navigator.vibrate) navigator.vibrate(15); }).catch(again);
   }
+  function solo(action) {
+    if (soloBusy) return;
+    soloBusy = true;
+    post('/api/detour', { pid: pid, action: action }).then(function (r) {
+      soloBusy = false;
+      if (r.err === 'slow') { toast('Связь занята. Нажмите ещё раз'); return; }
+      if (r.err) { toast('Не удалось выполнить действие'); return; }
+      toast('');
+      if (navigator.vibrate) navigator.vibrate(action === 'go' ? [25, 30, 25] : 20);
+    }).catch(function () { soloBusy = false; toast('Проблема со связью. Повторите действие'); });
+  }
+  function soloScreen(m) {
+    var d = m.detour, floor = d.floor, hand = m.gold;
+    var opts = ['','80','60','20'], rewards = [0,150,300,1200];
+    var h = '<div class="solo-portal solo-choice">';
+    if (d.stage === 'arrival') {
+      h = '<div class="solo-portal descend"><div class="solo-k">ЛИЧНАЯ ВЕТКА · ЛИФТ ПОЕХАЛ ВНИЗ</div>' +
+        '<div class="solo-shaft"><div class="solo-elevator"></div></div>' +
+        '<div class="solo-number" style="font-size:56px;color:#f7c953">ЭТАЖ 1</div>' +
+        '<p class="solo-question">Лифт вернул именно тебя на первый этаж. Остальные продолжают свою игру. Твои ' + hand + ' золотых сохранились.</p>' +
+        '<button class="solo-btn primary" data-solo="begin">ОТКРЫТЬ ДВЕРЬ</button></div>';
+      return h;
+    }
+    if (d.stage === 'choose') {
+      h += '<div class="solo-k">ЛИЧНЫЙ МАРШРУТ · ЭТАЖ ' + floor + ' / 3</div>' +
+        '<div class="solo-number">' + hand + '</div><span class="solo-badge">ЗОЛОТА В РУКАХ</span>' +
+        '<p class="solo-question">Ты вернулся из лифта. Дальнейшие решения не зависят от голосования зала.</p>' +
+        '<button class="solo-btn" data-solo="take">ЗАБРАТЬ ' + hand + ' · ВЫЙТИ</button>' +
+        '<button class="solo-btn primary" data-solo="go">РИСКНУТЬ · ' + opts[floor] + '% УСПЕХА → ' + rewards[floor] + '</button>' +
+        '<p class="solo-alert">ПРОВАЛ → ПОТЕРЯ ВСЕГО ЗОЛОТА</p></div>';
+      return h;
+    }
+    if (d.stage === 'result') {
+      h += '<div class="solo-k">ЛИЧНЫЙ КУБИК · ЭТАЖ ' + d.from + '</div>' +
+        '<div class="solo-number solo-reveal">' + d.roll + '</div><span class="solo-badge">УСПЕХ · ПРОШЁЛ</span>' +
+        '<p class="solo-question">Шанс был ' + opts[d.from] + '%. Ты прошёл на этаж ' + floor + '. В руках осталось ' + hand + ' золота.</p>' +
+        '<button class="solo-btn primary" data-solo="next">ПЕРЕЙТИ НА ЭТАЖ ' + floor + '</button></div>';
+      return h;
+    }
+    if (d.stage === 'done') {
+      var lost = d.outcome === 'trap';
+      h += '<div class="solo-k">ЛИЧНЫЙ МАРШРУТ ЗАВЕРШЁН</div>' +
+        '<div class="solo-number solo-reveal" style="color:' + (lost ? '#ff7474' : '#ffd05d') + '">' + m.banked + '</div><span class="solo-badge">ИТОГОВЫЙ БАЛАНС</span>' +
+        '<p class="solo-question">' + (lost ? 'Ловушка сработала: кубик ' + d.roll + ', золото потеряно.' : d.outcome === 'chest' ? 'Ты добрался до сундука и получил 1200 золота.' : 'Ты сохранил свою награду и завершил путь.') + ' Впереди общий финал.</p></div>';
+      return h;
+    }
+    return h + '</div>';
+  }
   function toast(t) { var e = $('#toast'); if (!e) { e = document.createElement('div'); e.id = 'toast'; e.style.cssText = 'position:fixed;left:12px;right:12px;bottom:12px;padding:10px 14px;border-radius:12px;background:#1b2440;color:#fff;font:600 14px Manrope,sans-serif;text-align:center;z-index:50;display:none'; document.body.appendChild(e); } e.textContent = t; e.style.display = t ? 'block' : 'none'; }
   window.__vote = vote;
-  var CH1 = 80;   /* шанс этажа 1, нужен для шага «лифт вниз» */
-  var lastSig = '', liftSeen = {}, liftTimer = null;
+  var lastSig = '', liftSeen = {}, liftTimer = null, soloBusy = false;
   function render() {
     var v = V, m = v && v.me;
     $('#who').textContent = m ? m.name : '';
@@ -100,15 +169,15 @@ input:focus{border-color:var(--cy);box-shadow:0 0 28px rgba(54,215,255,.3)}
       $('#nm').addEventListener('keydown', function (e) { if (e.key === 'Enter') join($('#nm').value); });
       return;
     }
-    if (v.floor && v.floor.ch1) CH1 = v.floor.ch1;
-    var f = v.floor, ph = v.phase, html = '', sig = [ph, v.round, m.choice, m.auto ? 1 : 0, m.active ? 1 : 0, m.gold, m.banked, m.last ? m.last.roll : '', liftSeen[v.round] ? 1 : 0, v.counts.voted, m.rank, v.players.length].join('|');
+    var f = v.floor, ph = v.phase, html = '', sig = [ph, v.round, m.choice, m.auto ? 1 : 0, m.active ? 1 : 0, m.gold, m.banked, m.last ? m.last.roll : '', m.detour ? JSON.stringify(m.detour) : '', v.counts.voted, m.rank, v.players.length].join('|');
     if (sig === lastSig) return; lastSig = sig;
     if (ph === 'final') return final(m, v);
     $('.final') && $('.final').remove();
-    if (m.spectator) {
+    if (m.detour) {
+      html = soloScreen(m);
+    } else if (m.spectator) {
       html = '<div class="k mono">ИГРА УЖЕ ИДЁТ</div><h2>Вы наблюдаете</h2><p class="mu">Вы зашли после старта. В эту игру не успели, смотрите на большой экран. В следующей игре будете участвовать.</p>';
     } else if (ph === 'lobby') {
-      liftSeen = {};
       html = '<div class="k mono">ВЫ В ИГРЕ</div><h2 class="pop">Привет, ' + esc(m.name) + '!</h2><p class="mu">Ждите старта. Скоро спуск в подземелье. Всего в игре: ' + v.players.filter(function (p) { return !p.sp; }).length + '</p><p class="pulse mu mono" style="letter-spacing:.2em;font-size:13px">ОЖИДАНИЕ ВЕДУЩЕГО…</p>';
     } else if (ph === 'open') {
       if (m.active) {
@@ -126,13 +195,6 @@ input:focus{border-color:var(--cy);box-shadow:0 0 28px rgba(54,215,255,.3)}
     } else if (ph === 'revealed') {
       var l = m.last;
       if (l && l.choice === 'lift' && l.up) html = '<div class="card ok pop"><div class="k mono">ЛИФТ ПОЕХАЛ ВВЕРХ</div><h2 class="good">Повезло!</h2><div class="big" style="margin-top:8px">' + l.gold + '</div><p class="mu">Вы пропустили этаж 2 без кубика. Золото при вас. Впереди этаж 3.</p></div>';
-      else if (l && l.choice === 'lift') {
-        if (!liftSeen[v.round]) {
-          html = '<div class="card pop"><div class="k mono">ЛИФТ ПОЕХАЛ ВНИЗ · ЭТАЖ 1</div><h2>Идёте снова на этаж 2</h2><div class="big" style="margin-top:8px;font-size:min(22vw,96px)">' + CH1 + ' %</div><p class="mu">Нужно, чтобы кубик выпал меньше ' + CH1 + '. Золото при вас, лифт здесь не работает.</p></div>';
-          if (!liftTimer) liftTimer = setTimeout(function () { liftTimer = null; liftSeen[v.round] = 1; lastSig = ''; render(); }, 2800);
-        } else if (l.pass2) html = '<div class="card ok pop"><div class="k mono">КУБИК ' + l.roll2 + ' · НУЖНО МЕНЬШЕ ' + CH1 + '</div><h2 class="good">Прошли!</h2><h2 class="gold" style="margin-top:10px">Сундук пуст</h2><div class="big" style="margin-top:8px">0</div><p class="mu">Награду на этаже 2 уже забрал кто-то другой. Ваш баланс 0.</p></div>';
-        else html = '<div class="card bad pop"><div class="k mono">КУБИК ' + l.roll2 + ' · НУЖНО МЕНЬШЕ ' + CH1 + '</div><h2 class="badc">Ловушка</h2><div class="big" style="margin-top:8px;color:#FF6A6A;text-shadow:none">0</div><p class="mu">Золото сгорело. Ваш баланс 0.</p></div>';
-      }
       else if (l && l.choice === 'take') html = '<div class="card ok pop"><div class="k mono">ВЫ ЗАБРАЛИ</div><div class="big">' + l.gold + '</div><p class="mu">Это ваш баланс. Дальше смотрите на экран, итоги в конце.</p></div>';
       else if (l && l.pass) html = '<div class="card ok pop"><div class="k mono">КУБИК ' + l.roll + ' · НУЖНО МЕНЬШЕ ' + f.chance + '</div><h2 class="good">Прошли!</h2><div class="big" style="margin-top:8px">' + l.gold + '</div><p class="mu">' + (v.round === 3 ? 'Сундук ваш! Баланс ' + l.gold + '.' : 'Теперь в руках ' + l.gold + '. Впереди этаж ' + (v.round + 1) + '.') + '</p></div>';
       else if (l) html = '<div class="card bad pop"><div class="k mono">КУБИК ' + l.roll + ' · НУЖНО МЕНЬШЕ ' + f.chance + '</div><h2 class="badc">Ловушка</h2><div class="big" style="margin-top:8px;color:#FF6A6A;text-shadow:none">0</div><p class="mu">Золото сгорело. Ваш баланс 0.</p></div>';
@@ -141,6 +203,7 @@ input:focus{border-color:var(--cy);box-shadow:0 0 28px rgba(54,215,255,.3)}
     }
     M.innerHTML = html;
     M.querySelectorAll('.opt').forEach(function (b) { b.onclick = function () { vote(b.getAttribute('data-c')); }; });
+    M.querySelectorAll('[data-solo]').forEach(function (b) { b.onclick = function () { solo(b.getAttribute('data-solo')); }; });
   }
   function out(m) {
     if (m.dead && m.hist && m.hist.some(function (h) { return h.choice === 'lift'; })) return '<div class="card bad"><div class="k mono">ВЫ ВЫБЫЛИ</div><h2 class="badc">Лифт увёз в тупик</h2><p class="mu">Баланс 0. Следите за остальными на большом экране.</p></div>';
@@ -151,7 +214,7 @@ input:focus{border-color:var(--cy);box-shadow:0 0 28px rgba(54,215,255,.3)}
     if (m.spectator) { M.innerHTML = '<div class="k mono">ИГРА ЗАКОНЧЕНА</div><h2>Спасибо за зал!</h2>'; return; }
     var b = m.banked || 0, el = document.createElement('div'); el.className = 'final' + (b === 0 ? ' zero' : '');
     el.innerHTML = '<div class="k mono">ИТОГ · ' + esc(m.name) + '</div><div class="num pop">' + b + '</div><div class="k mono">ЗОЛОТА В БАЛАНСЕ</div><h2 style="margin-top:14px">' + (m.rank ? 'Место ' + m.rank + ' из ' + m.total : '') + '</h2><p class="mu" style="max-width:340px">' +
-      (b === 0 && m.hist && m.hist.some(function (h) { return h.choice === 'lift' && !h.up; }) ? 'Лифт оказался тупиком. На кнопке было «золото не сгорит», а про выход ничего не говорили. По расчёту лифт даёт в среднем ' + v.final.lift.ev + ', лестница ' + v.final.lift.stairs + '.' : b === 0 ? 'Ловушка забрала всё. Так бывает: решение могло быть верным, а результат нет.' : b >= 1200 ? 'Сундук взят. Редкая удача: шанс всего 20 %.' : 'Среднее по залу ' + String(v.final.avg).replace('.', ',') + '. Лучшая стратегия по расчёту даёт в среднем 144.') + '</p>';
+      (b === 0 && m.hist && m.hist.some(function (h) { return h.choice === 'lift' && !h.up; }) ? 'Личная ветка после лифта завершилась поражением. Это вероятностная игра: результат одного игрока не равен математическому ожиданию. Лифт ' + v.final.lift.ev + ', лестница ' + v.final.lift.stairs + '.' : b === 0 ? 'Ловушка забрала всё. Так бывает: решение могло быть верным, а результат нет.' : b >= 1200 ? 'Сундук взят. Редкая удача: шанс всего 20 %.' : 'Среднее по залу ' + String(v.final.avg).replace('.', ',') + '. Лучшая стратегия по расчёту даёт в среднем ' + String(v.final.theory).replace('.', ',') + '.') + '</p>';
     var old = $('.final'); if (old) old.remove(); document.body.appendChild(el);
     $('#top').style.visibility = 'hidden'; M.innerHTML = '';
   }
