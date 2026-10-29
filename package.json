@@ -1,0 +1,9 @@
+{
+  "name": "decision01-game",
+  "version": "1.0.0",
+  "private": true,
+  "description": "DECISION / 01 — игра для зала (Подземелье)",
+  "main": "server.js",
+  "scripts": { "start": "node server.js" },
+  "engines": { "node": ">=18" }
+}
